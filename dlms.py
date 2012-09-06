@@ -37,7 +37,7 @@ class dlms(object):
     self.ser.write("/?!\r\n")
     state = 0
     id = ""
-    cont = ""
+    message_body = ""
     sum = 0
     while True:
       a = self.ser.read(1)
@@ -74,7 +74,7 @@ class dlms(object):
         # message body
         sum ^= b
         if b != ETX:
-          cont += a
+          message_body += a
         else:
           state = ETX_RECEIVED
       elif state == ETX_RECEIVED:
@@ -84,24 +84,24 @@ class dlms(object):
               "Checksum Mismatch")
           state = ERROR
         else:
-          return self.parse(id, cont)
+          return self.parse(id, message_body)
       elif state == ERROR:
         # Error, flush
         pass
     assert False
 
-  def parse(self, id, cont):
+  def parse(self, id, message_body):
     l = list()
     l.append(id)
     l.append(dict())
-    cont = cont.split("\r\n")
-    if cont[-1] != "":
+    message_body = message_body.split("\r\n")
+    if message_body[-1] != "":
       raise dlmsError(
           "Last data item lacks CRNL")
-    if cont[-2] != "!":
+    if message_body[-2] != "!":
       raise dlmsError(
           "Last data item not '!'")
-    for i in cont[:-2]:
+    for i in message_body[:-2]:
       if i[-1] != ")":
         raise dlmsError(
             "Last char of data item not ')'")
